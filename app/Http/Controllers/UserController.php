@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response; 
 use App\Models\User;
 use App\Traits\ApiResponser;
+use App\Models\UserJob;
 
 
 Class UserController extends Controller {
@@ -52,40 +53,56 @@ public function getUsers(){
 
         $rules = [
             'username' => 'required|max:20',
-            'password' => 'required:max:20'
+            'password' => 'required:max:20',
+            'jobid' => 'required|numeric|min:1|not_in:0',
         ];
 
-        $this->validate($this->request, $rules);
-        $users = new User;
+        $this->validate($request, $rules);
 
-        $users->username = $this->request->username;
-        $users->password = $this->request->password;
+        //validate if jobid is found in the tbluserjob
+        $userjob=UserJob::findOrFail($request->jobid);
+        $users = User::create($request->all());
 
-        $users->save(); 
-        return response()->json($users,200);
+        return $this->successResponse($users, Response::HTTP_CREATED);
+
+        // $users = new User;
+
+        // $users->username = $this->request->username;
+        // $users->password = $this->request->password;
+
+        // $users->save(); 
+        // return response()->json($users,200);
     }
 
 
     // Update User
-    public function updateUser($id){
+    public function updateUser(Request $request, $id){
 
         $rules = [
-            'username' => 'required|max:20',
-            'password' => 'required:max:20'
+            'jobid' => 'required|numeric|min:1|not_in:0',
         ];
+        $this->validate($request,$rules); 
+        $userjob = UserJob::findOrFail($request->jobid);
+  
+        $users = User::find($id);
 
-        $this->validate($this->request, $rules);
+        
+        if($request->input('password') == null){
+            $users->username = $request->input('username');
+            $request->input = $users->password;
+            $users->jobid= $request->jobid;
+        }else if($request->input('username') == null ){
+            $users->password = $request->input('password');
+            $request->username = $users->username;
+            $users->jobid= $request->jobid;
+        }else{
+            $users->username = $request->input('username');
+            $users->password = $request->input('password');
+            $users->jobid= $request->jobid;
+        }
+        $users->save();
 
-        $user = User::find($id);
-
-        if($user == null) return response()->json('Doesnt exist in the database',404);
-
-        $user->username = $this->request->username;
-        $user->password = $this->request->password;
-
-        $user->save();
-
-        return response()->json($user,200);
+        return $this->successResponse('User Updated Successfully',Response::HTTP_OK);
     }
     
     public function deleteUser($id){
@@ -110,3 +127,4 @@ public function getUsers(){
     }
 }
   
+//eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIyIiwianRpIjoiZWQ2N2MyMmFlYmJhZDViZTgxZmEyYTZiMWE5MDI5N2IxNzlkZGZkN2VlZjg3MWIzMGIxNzM4YTE2MTFiNWIwM2U1MjI3ZmUwM2U4ZWVlY2IiLCJpYXQiOjE2MDc0OTQ3NzIsIm5iZiI6MTYwNzQ5NDc3MiwiZXhwIjoxNjM5MDMwNzcyLCJzdWIiOiIiLCJzY29wZXMiOltdfQ.kRcGpJOQFSURwyxXirLXcFOmXgtr-8Muwm8yinlEIzcvyBlWb8QwuukhYs6XCFkDuhWgh22o2EOSbBqx3YgsK8fcTUbYYLFlIYhzmNG4R3Nwoawqat5xQ0GFA492N3dPUZjmJiJoQPY8qF_Fbf0QT_6xE4q34lpm04T4PkGXLI0m_98RSbYGroJ4KVLKyNdLcSBrbHKo6S_2r54ngkIgSBU3JFaYG-qXw19aZT63_NIAFs2Cw1s-0sBLB6-HqHZrl0vLA5ViU39SdxMBUZraAO-keT2QXuvn1o5F24LuO4AztvvCMx2ukL5yS_vt-VPqcglV2hc1PVW1MeekQYXkdMel0l8u558UxUvPNJvVDleE0iDFIIM1esCxpA0bsCoKYeDwaZvGXTS3k13QXLi0UEHOZjq4_leAPAonkkBkMPQlzxkkXm7kjaNVwhRZrlX5utJG4VxxTWdcDOY7pHOYEblSJSkkC9sltFsR7VR46oawZfxsKDzpCHGHsrK2pLAVT5FejvOVX_APlhqlbHwvMoAzDdTFbQ3C0k9A8ZcwlXSmVH7Ggflwnf4jroMO6_9k1Eq_arbQrGaDtdatRMHLmgHMCe03xlrTjaPk8p5svtawLIdWtmCnjSV9hkhRfJzQSJ5WmUcSL6ZecBQktr6f9uTU4mSVmTROVipwthWu46c
